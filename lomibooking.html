@@ -115,6 +115,9 @@ function showBuyPage(){
     const stock70 = inventory['70_percent'] ? Object.keys(inventory['70_percent']).length : 0;
     const stock73 = inventory['73_percent'] ? Object.keys(inventory['73_percent']).length : 0;
 
+    // Use the direct QR image URL
+    const qrURL = "https://i.imgur.com/VLM3sQK.jpeg";
+
     document.getElementById("app").innerHTML = `
       <div class="card">
         <h2>💖 Buy Vouchers 💖</h2>
@@ -125,7 +128,10 @@ function showBuyPage(){
         <hr>
         <h3>Total: ₱<span id="totalAmount">0</span></h3>
         <p><strong>Scan to Pay via GCash</strong></p>
-        <img src="https://i.imgur.com/hzdio2H_d.jpeg" alt="GCash QR Code">
+        <img src="${qrURL}" alt="GCash QR Code">
+        <p style="font-size:14px; word-break: break-all; color:#ff3399; margin-bottom:10px;">
+          QR URL: <a href="${qrURL}" target="_blank">${qrURL}</a>
+        </p>
         <input type="text" id="reference" placeholder="Enter GCash Reference Number">
         <button onclick="submitOrder()">Submit Order</button>
         <button onclick="showHomepage()" class="secondary-btn">Back</button>
@@ -134,6 +140,7 @@ function showBuyPage(){
     `;
   });
 }
+
 
 function calculateTotal(){
   const qty70 = parseInt(document.getElementById("qty70").value) || 0;
@@ -318,3 +325,4 @@ showHomepage();
 </script>
 </body>
 </html>
+
