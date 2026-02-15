@@ -5,288 +5,323 @@
 <title>Voucher Store</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-/* ===== GLOBAL STYLES ===== */
-body {
-  font-family: 'Comic Sans MS', 'Segoe UI', sans-serif;
-  background: #ffe6f0;
-  margin: 0;
-  padding: 15px;
-  color: #333;
-}
-
-.card {
-  background: #fff0f6;
-  border-radius: 20px;
-  padding: 20px;
-  max-width: 450px;
-  margin: 15px auto;
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(255,105,180,0.3);
-  animation: pop 0.6s ease;
-}
-
-@keyframes pop {
-  0% { transform: scale(0.9); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
-
-h2 { color: #ff66b2; font-size: 24px; margin-bottom: 15px; }
-h3 { color: #ff3399; font-size: 20px; margin: 10px 0; }
-
-button {
-  width: 100%;
-  max-width: 300px;
-  padding: 14px 20px;
-  margin: 8px 0;
-  border: none;
-  border-radius: 12px;
-  font-size: 18px;
-  font-weight: bold;
-  cursor: pointer;
-  background: linear-gradient(45deg, #ff99cc, #ff66b2);
-  color: white;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-button:hover { transform: scale(1.05); box-shadow: 0 0 15px #ff66b2; }
-.secondary-btn { background: linear-gradient(45deg, #ffb3d9, #ff99cc); }
-
-input {
-  width: 95%;
-  padding: 12px;
-  margin: 10px 0;
-  border-radius: 10px;
-  border: 1px solid #ff66b2;
-  outline: none;
-  font-size: 16px;
-  background: #fff0f6;
-  color: #333;
-}
-
-input::placeholder { color: #ff66b2; }
-
-.order-box {
-  border: 1px solid #ff99cc;
-  padding: 12px;
-  margin: 12px 0;
-  border-radius: 15px;
-  font-size: 16px;
-  background: #fff0f6;
-}
-
-img { max-width: 100%; height: auto; border-radius: 10px; margin: 10px 0; }
-
-.qr-link {
-  color: #ff3399;
-  text-decoration: underline;
-  font-weight: bold;
-  font-size: 14px;
-}
+body { font-family:'Comic Sans MS','Segoe UI',sans-serif; background:#ffe6f0; margin:0; padding:15px; color:#333; }
+.card { background:#fff0f6; border-radius:20px; padding:20px; max-width:450px; margin:15px auto; text-align:center; box-shadow:0 4px 15px rgba(255,105,180,0.3); animation:pop 0.6s ease; }
+@keyframes pop { 0% { transform:scale(0.9); } 50% { transform:scale(1.05); } 100% { transform:scale(1); } }
+h2 { color:#ff66b2; font-size:24px; margin-bottom:15px; }
+h3 { color:#ff3399; font-size:20px; margin:10px 0; }
+button { width:100%; max-width:300px; padding:14px 20px; margin:8px 0; border:none; border-radius:12px; font-size:18px; font-weight:bold; cursor:pointer; background:linear-gradient(45deg,#ff99cc,#ff66b2); color:white; transition:transform 0.2s, box-shadow 0.2s; }
+button:hover { transform:scale(1.05); box-shadow:0 0 15px #ff66b2; }
+.secondary-btn { background:linear-gradient(45deg,#ffb3d9,#ff99cc); }
+input { width:95%; padding:12px; margin:10px 0; border-radius:10px; border:1px solid #ff66b2; outline:none; font-size:16px; background:#fff0f6; color:#333; }
+input::placeholder { color:#ff66b2; }
+.order-box { border:1px solid #ff99cc; padding:12px; margin:12px 0; border-radius:15px; font-size:16px; background:#fff0f6; text-align:left; }
+img { max-width:100%; height:auto; border-radius:10px; margin:10px 0; }
 </style>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
 <div id="app"></div>
 
 <script>
-/* ===== DATA STORAGE ===== */
-let orders = [];
-let vouchersStock = { "70%": [], "73%": [] };
-let archivedOrders = [];
-const ADMIN_PASSWORD = "redoblado2019";
+// ====== FIREBASE CONFIG ======
+const firebaseConfig = {
+    apiKey: "AIzaSyDh1JMuyTR0qhVsMJv_RE4rGxDh8vNDAAI",
+    authDomain: "lomibooking-5f95b.firebaseapp.com",
+    databaseURL: "https://lomibooking-5f95b-default-rtdb.firebaseio.com",
+    projectId: "lomibooking-5f95b",
+    storageBucket: "lomibooking-5f95b.appspot.com",
+    messagingSenderId: "121811683518",
+    appId: "1:121811683518:web:666af06e574bcfbe0276ef"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-/* ===== INITIAL HOMEPAGE ===== */
+// ====== INITIAL SETUP OF SHOPS ======
+const shopsData = {
+  shop1: { name:"SHEIN LOMI", password:"redoblado2019", qrCode:"https://i.imgur.com/VLM3sQK_d.jpeg", vouchers: { "70_percent":[], "73_percent":[]} },
+  shop2: { name:"SHEIN MAMI", password:"mami1234", qrCode:"https://i.imgur.com/1kZ7M9K_d.jpeg", vouchers: { "70_percent":[], "73_percent":[]} },
+  shop3: { name:"SHEIN MIX", password:"mix1234", qrCode:"https://i.imgur.com/3Lz5U3K_d.jpeg", vouchers: { "70_percent":[], "73_percent":[]} }
+};
+
+// Preload shops into Firebase if they don't exist
+Object.keys(shopsData).forEach(shopId=>{
+  db.ref('shops/'+shopId).once('value').then(snap=>{
+    if(!snap.exists()) db.ref('shops/'+shopId).set(shopsData[shopId]);
+  });
+});
+
+// ====== GLOBAL STATE ======
+let currentShop = null;
+
+// ====== HOMEPAGE ======
 function showHomepage(){
+  currentShop = null;
   document.getElementById("app").innerHTML = `
     <div class="card">
       <h2>💖 Voucher Store 💖</h2>
-      <button onclick="showBuyPage()">Buy Vouchers</button>
-      <button onclick="showMyOrder()">Check My Order</button>
+      <button onclick="showShopSelection()">Buy Vouchers</button>
+      <button onclick="showOrderCheck()">Check My Order</button>
       <button onclick="showAdminLogin()" class="secondary-btn">Admin Panel</button>
     </div>
   `;
 }
 
-/* ===== BUY PAGE ===== */
-function showBuyPage(){
-  const stock70 = vouchersStock["70%"].length;
-  const stock73 = vouchersStock["73%"].length;
+// ====== SHOP SELECTION ======
+function showShopSelection(){
   document.getElementById("app").innerHTML = `
     <div class="card">
-      <h2>💖 Buy Vouchers 💖</h2>
-      <p><strong>70% Voucher - ₱25</strong> | Stock: ${stock70}</p>
-      <input type="number" id="qty70" placeholder="Quantity for 70%" min="0" oninput="calculateTotal()">
-      <p><strong>73% Voucher - ₱35</strong> | Stock: ${stock73}</p>
-      <input type="number" id="qty73" placeholder="Quantity for 73%" min="0" oninput="calculateTotal()">
-      <hr>
-      <h3>Total: ₱<span id="totalAmount">0</span></h3>
-      <p><strong>Scan QR Code to Pay 💳</strong></p>
-     <img src="https://i.imgur.com/VLM3sQK_d.jpeg?raw=true" alt="GCash QR Code">
-<p class="qr-link">Link: <a href="https://i.imgur.com/VLM3sQK_d.jpeg?raw=true" target="_blank">https://i.imgur.com/VLM3sQK_d.jpeg?raw=true</a></p>
-    <input type="text" id="reference" placeholder="Enter GCash Reference Number">
-      <button onclick="submitOrder()">Submit Order</button>
+      <h2>Select Shop</h2>
+      <input type="text" id="shopInput" placeholder="Enter shop1, shop2, or shop3">
+      <button onclick="selectShop()">Go</button>
       <button onclick="showHomepage()" class="secondary-btn">Back</button>
-      <div id="buyResult"></div>
     </div>
   `;
 }
 
-/* ===== TOTAL CALCULATION ===== */
+function selectShop(){
+  const shop = document.getElementById("shopInput").value.trim();
+  if(!shop) return alert("Enter a shop ID");
+  currentShop = shop;
+  showBuyPage();
+}
+
+// ====== BUYER VIEW ======
+function showBuyPage(){
+  if(!currentShop) return showShopSelection();
+
+  db.ref('shops/' + currentShop).once('value').then(snapshot=>{
+    const shopData = snapshot.val() || {};
+    const vouchers = shopData.vouchers || {"70_percent":[],"73_percent":[]};
+    const stock70 = vouchers['70_percent'].length;
+    const stock73 = vouchers['73_percent'].length;
+    const qrCode = shopData.qrCode || "";
+
+    document.getElementById("app").innerHTML = `
+      <div class="card">
+        <h2>💖 Buy Vouchers - ${shopData.name || currentShop} 💖</h2>
+        <p><strong>70% Voucher - ₱25</strong> | Stock: ${stock70}</p>
+        <input type="number" id="qty70" placeholder="Quantity for 70%" min="0" oninput="calculateTotal()">
+        <p><strong>73% Voucher - ₱35</strong> | Stock: ${stock73}</p>
+        <input type="number" id="qty73" placeholder="Quantity for 73%" min="0" oninput="calculateTotal()">
+        <hr>
+        <h3>Total: ₱<span id="totalAmount">0</span></h3>
+        <p><strong>Scan QR Code to Pay 💳</strong></p>
+        <img src="${qrCode}" style="max-width:150px;">
+        <input type="text" id="reference" placeholder="Enter Reference Number">
+        <button onclick="submitOrder()">Submit Order</button>
+        <button onclick="showHomepage()" class="secondary-btn">Back</button>
+        <div id="buyResult"></div>
+      </div>
+    `;
+  });
+}
+
 function calculateTotal(){
-  const qty70 = parseInt(document.getElementById("qty70").value) || 0;
-  const qty73 = parseInt(document.getElementById("qty73").value) || 0;
+  const qty70 = parseInt(document.getElementById("qty70").value)||0;
+  const qty73 = parseInt(document.getElementById("qty73").value)||0;
   document.getElementById("totalAmount").innerText = qty70*25 + qty73*35;
 }
 
-/* ===== SUBMIT ORDER ===== */
 function submitOrder(){
-  const qty70 = parseInt(document.getElementById("qty70").value) || 0;
-  const qty73 = parseInt(document.getElementById("qty73").value) || 0;
+  const qty70 = parseInt(document.getElementById("qty70").value)||0;
+  const qty73 = parseInt(document.getElementById("qty73").value)||0;
   const reference = document.getElementById("reference").value.trim();
-  if(qty70 === 0 && qty73 === 0) return alert("Enter quantity.");
-  if(reference.length<6) return alert("Invalid reference.");
-  orders.push({ qty70, qty73, reference, status:"pending", assignedVouchers:{}, timestamp: Date.now() });
-  document.getElementById("buyResult").innerHTML = `<p style="color:green;">Order submitted! Await admin confirmation.</p>`;
-  showBuyPage(); // refresh stock display
+  if(qty70===0 && qty73===0) return alert("Enter quantity");
+  if(reference.length<3) return alert("Reference too short");
+
+  alert("💖 THANK YOU FOR YOUR ORDER! 💖\n\nPLEASE CHECK YOUR ORDER IN A BIT!\nYOUR REFERENCE NUMBER WILL BE YOUR GCASH PAYMENT REFERENCE NUMBER.");
+
+  const newOrderRef = db.ref('shops/' + currentShop + '/orders').push();
+  newOrderRef.set({
+    qty70, qty73, reference, status:'pending', assignedVouchers:{}, timestamp:Date.now()
+  }).then(()=>{
+    showBuyPage();
+  });
 }
 
-/* ===== CHECK ORDER ===== */
-function showMyOrder(){
-  const reference = prompt("Enter reference number:");
-  if(!reference) return;
-  const order = orders.concat(archivedOrders).find(o => o.reference === reference);
-  if(!order) return alert("Order not found.");
+// ====== CHECK ORDER ======
+function showOrderCheck(){
+  if(!currentShop){
+    alert("Select a shop first!");
+    return showShopSelection();
+  }
+
   document.getElementById("app").innerHTML = `
     <div class="card">
-      <h2>My Order</h2>
-      <p>Status: ${order.status}</p>
-      <p>70% Codes: ${(order.assignedVouchers["70%"] || []).join(", ") || "None"}</p>
-      <p>73% Codes: ${(order.assignedVouchers["73%"] || []).join(", ") || "None"}</p>
-      <button onclick="showHomepage()">Back</button>
+      <h2>Check My Order</h2>
+      <input type="text" id="orderRef" placeholder="Enter Reference Number">
+      <button onclick="checkOrder()">Check Order</button>
+      <button onclick="showHomepage()" class="secondary-btn">Back</button>
     </div>
   `;
 }
 
-/* ===== ADMIN LOGIN ===== */
+function checkOrder(){
+  const ref = document.getElementById("orderRef").value.trim();
+  if(!ref) return alert("Enter reference number");
+
+  db.ref('shops/' + currentShop + '/orders').once('value').then(snapshot=>{
+    const orders = snapshot.val() || {};
+    let found = null;
+    Object.values(orders).forEach(o=>{
+      if(o.reference===ref) found=o;
+    });
+    if(!found) return alert("Order not found");
+
+    document.getElementById("app").innerHTML = `
+      <div class="card">
+        <h2>My Order - ${currentShop}</h2>
+        <p>Status: ${found.status}</p>
+        <p>70% Codes: ${(found.assignedVouchers['70%']||[]).join(", ")||"None"}</p>
+        <p>73% Codes: ${(found.assignedVouchers['73%']||[]).join(", ")||"None"}</p>
+        <button onclick="showHomepage()">Back</button>
+      </div>
+    `;
+  });
+}
+
+// ====== ADMIN LOGIN ======
 function showAdminLogin(){
   document.getElementById("app").innerHTML = `
     <div class="card">
       <h2>Admin Login</h2>
+      <input type="text" id="shopId" placeholder="Enter Shop ID">
       <input type="password" id="adminPasswordInput" placeholder="Enter Password">
       <button onclick="adminLogin()">Login</button>
       <button onclick="showHomepage()" class="secondary-btn">Back</button>
-      <div id="adminLoginResult"></div>
     </div>
   `;
 }
 
 function adminLogin(){
-  const pw = document.getElementById("adminPasswordInput").value;
-  if(pw !== ADMIN_PASSWORD){ return alert("Incorrect password!"); }
-  showAdminDashboard();
-}
+  const shopId = document.getElementById("shopId").value.trim();
+  const pw = document.getElementById("adminPasswordInput").value.trim();
+  if(!shopId || !pw) return alert("Enter both shop ID and password");
 
-/* ===== ADMIN DASHBOARD ===== */
-function showAdminDashboard(){
-  document.getElementById("app").innerHTML = `
-    <div class="card">
-      <h2>Admin Panel</h2>
-      <h3>Stock Vouchers</h3>
-      <input type="text" id="stock70" placeholder="Add 70% codes (comma separated)">
-      <button onclick="stockVouchers('70%')">Add 70%</button>
-      <input type="text" id="stock73" placeholder="Add 73% codes (comma separated)">
-      <button onclick="stockVouchers('73%')">Add 73%</button>
-      <hr>
-      <h3>Pending Orders</h3>
-      <div id="ordersList"></div>
-      <hr>
-      <button onclick="showArchivedOrders()">View Archived Orders</button>
-      <button onclick="showHomepage()" class="secondary-btn">Logout</button>
-    </div>
-  `;
-  renderOrders();
-}
-
-/* ===== STOCK VOUCHERS ===== */
-function stockVouchers(type){
-  const inputId = type === "70%" ? "stock70" : "stock73";
-  const raw = document.getElementById(inputId).value.trim();
-  if(!raw) return alert("Enter voucher codes.");
-  const codes = raw.split(",").map(c=>c.trim()).filter(c=>c);
-  vouchersStock[type] = vouchersStock[type].concat(codes);
-  alert(`Added ${codes.length} vouchers to ${type}`);
-  document.getElementById(inputId).value = "";
-  renderOrders();
-}
-
-/* ===== RENDER PENDING ORDERS ===== */
-function renderOrders(){
-  const container = document.getElementById("ordersList");
-  if(!container) return;
-  let html = "";
-  orders.forEach((o,i)=>{
-    if(o.status === "pending"){
-      html += `
-        <div class="order-box">
-          <p>Ref: ${o.reference}</p>
-          <p>Qty 70%: ${o.qty70} | Qty 73%: ${o.qty73}</p>
-          <button onclick="confirmOrder(${i})">Confirm Order</button>
-        </div>
-      `;
+  db.ref('shops/' + shopId + '/password').once('value').then(snapshot=>{
+    if(snapshot.val()===pw){
+      currentShop = shopId;
+      showAdminDashboard();
+    } else {
+      alert("Wrong shop ID or password");
     }
   });
-  container.innerHTML = html || "<p>No pending orders.</p>";
 }
 
-/* ===== CONFIRM ORDER ===== */
-function confirmOrder(index){
-  const order = orders[index];
-  if(order.qty70 > vouchersStock["70%"].length || order.qty73 > vouchersStock["73%"].length){
-    return alert("Not enough vouchers in stock!");
-  }
-  // Assign vouchers
-  order.assignedVouchers["70%"] = vouchersStock["70%"].splice(0, order.qty70);
-  order.assignedVouchers["73%"] = vouchersStock["73%"].splice(0, order.qty73);
-  order.status = "confirmed";
-  // Move to archive
-  archivedOrders.push(order);
-  orders.splice(index, 1);
-  alert(`Order confirmed! Vouchers assigned to buyer.`);
-  showAdminDashboard();
-}
+// ====== ADMIN DASHBOARD ======
+function showAdminDashboard(){
+  db.ref('shops/' + currentShop).once('value').then(snapshot=>{
+    const shopData = snapshot.val() || {};
+    const vouchers = shopData.vouchers || {"70_percent":[],"73_percent":[]};
+    const orders = shopData.orders || {};
 
-/* ===== VIEW ARCHIVED ORDERS ===== */
-function showArchivedOrders(){
-  let html = "<div class='card'><h2>Archived Orders</h2>";
-  archivedOrders.forEach((o,i)=>{
-    html += `
-      <div class="order-box">
-        <p>Ref: ${o.reference}</p>
-        <p>Status: ${o.status}</p>
-        <p>70% Codes: ${(o.assignedVouchers["70%"]||[]).join(", ") || "None"}</p>
-        <p>73% Codes: ${(o.assignedVouchers["73%"]||[]).join(", ") || "None"}</p>
-        <button onclick="deleteArchived(${i})">Delete Permanently</button>
+    let pendingHtml = "";
+    let archivedHtml = "";
+
+    Object.keys(orders).forEach(key=>{
+      const o = orders[key];
+      if(o.status==='pending'){
+        pendingHtml += `<div class="order-box">
+          <p>Ref: ${o.reference}</p>
+          <p>Qty 70%: ${o.qty70} | Qty 73%: ${o.qty73}</p>
+          <button onclick="confirmOrder('${key}')">Confirm Order</button>
+        </div>`;
+      } else if(o.status==='confirmed'){
+        archivedHtml += `<div class="order-box">
+          <p>Ref: ${o.reference}</p>
+          <p>Qty 70%: ${o.qty70} | Qty 73%: ${o.qty73}</p>
+          <p>Vouchers Assigned: ${(o.assignedVouchers['70%']||[]).join(", ")} | ${(o.assignedVouchers['73%']||[]).join(", ")}</p>
+          <button onclick="deleteOrder('${key}')">Permanent Delete</button>
+        </div>`;
+      }
+    });
+
+    if(!pendingHtml) pendingHtml = "<p>No pending orders.</p>";
+    if(!archivedHtml) archivedHtml = "<p>No confirmed orders.</p>";
+
+    document.getElementById("app").innerHTML = `
+      <div class="card">
+        <h2>Admin Panel - ${shopData.name || currentShop}</h2>
+        <h3>Stock Vouchers</h3>
+        <input type="text" id="stock70" placeholder="Add 70% codes (comma separated)">
+        <button onclick="stockVouchers('70_percent')">Add 70%</button>
+        <input type="text" id="stock73" placeholder="Add 73% codes (comma separated)">
+        <button onclick="stockVouchers('73_percent')">Add 73%</button>
+        <hr>
+        <h3>Pending Orders</h3>
+        <div id="ordersList">${pendingHtml}</div>
+        <hr>
+        <h3>Confirmed / Archived Orders</h3>
+        <div id="archivedOrders">${archivedHtml}</div>
+        <hr>
+        <button onclick="logoutAdmin()" class="secondary-btn">Logout</button>
       </div>
     `;
+}
+
+// ====== STOCK VOUCHERS ======
+function stockVouchers(type){
+  const inputId = type==='70_percent'?'stock70':'stock73';
+  const raw = document.getElementById(inputId).value.trim();
+  if(!raw) return alert("Enter voucher codes");
+
+  const codes = raw.split(",").map(c=>c.trim()).filter(c=>c);
+
+  db.ref('shops/' + currentShop + '/vouchers/' + type).once('value').then(snapshot=>{
+    const current = snapshot.val() || [];
+    const updated = current.concat(codes);
+    db.ref('shops/' + currentShop + '/vouchers/' + type).set(updated).then(()=>{
+      alert(`Added ${codes.length} vouchers to ${type}`);
+      showAdminDashboard();
+    });
   });
-  html += `<button onclick="showAdminDashboard()" class="secondary-btn">Back</button></div>`;
-  document.getElementById("app").innerHTML = html;
 }
 
-/* ===== DELETE ARCHIVED ORDER ===== */
-function deleteArchived(i){
-  archivedOrders.splice(i,1);
-  showArchivedOrders();
+// ====== CONFIRM ORDER ======
+function confirmOrder(orderKey){
+  db.ref('shops/' + currentShop).once('value').then(snapshot=>{
+    const shopData = snapshot.val();
+    const vouchers = shopData.vouchers;
+    const order = shopData.orders[orderKey];
+
+    if(order.qty70>vouchers['70_percent'].length || order.qty73>vouchers['73_percent'].length){
+      return alert("Not enough vouchers in stock");
+    }
+
+    order.assignedVouchers = {
+      '70%': vouchers['70_percent'].splice(0, order.qty70),
+      '73%': vouchers['73_percent'].splice(0, order.qty73)
+    };
+    order.status = 'confirmed';
+
+    const updates = {};
+    updates['shops/' + currentShop + '/vouchers/70_percent'] = vouchers['70_percent'];
+    updates['shops/' + currentShop + '/vouchers/73_percent'] = vouchers['73_percent'];
+    updates['shops/' + currentShop + '/orders/' + orderKey] = order;
+
+    db.ref().update(updates).then(()=> showAdminDashboard());
+  });
 }
 
-/* ===== INITIALIZE ===== */
-window.showHomepage = showHomepage;
-window.showBuyPage = showBuyPage;
-window.showMyOrder = showMyOrder;
-window.showAdminLogin = showAdminLogin;
+// ====== DELETE CONFIRMED ORDER ======
+function deleteOrder(orderKey){
+  if(confirm("Are you sure you want to permanently delete this confirmed order? This cannot be undone!")){
+    db.ref('shops/' + currentShop + '/orders/' + orderKey).remove().then(()=>{
+      alert("Order permanently deleted!");
+      showAdminDashboard();
+    });
+  }
+}
 
+// ====== LOGOUT ======
+function logoutAdmin(){ currentShop=null; showHomepage(); }
+
+// ====== INITIALIZE ======
 showHomepage();
 </script>
 </body>
 </html>
-
